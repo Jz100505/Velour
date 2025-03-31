@@ -1,17 +1,148 @@
 <?php
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+include('database/connection.php'); 
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
+
+    unset($_SESSION['register_error_username']);
+    unset($_SESSION['register_error_email']);
+    unset($_SESSION['register_error']); 
+    unset($_SESSION['register_posted_data']); 
+    
+    $posted_data_for_repopulation = $_POST;
+    unset($posted_data_for_repopulation['password']);
+    unset($posted_data_for_repopulation['confirm_password']);
+    $_SESSION['register_posted_data'] = $posted_data_for_repopulation;
+
+
+    $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    $role = 'client'; 
+
+    $usernameError = ""; 
+    $emailError = "";
+    $general_error = ""; 
+    $hasError = false; 
+
+    if (strlen($username) < 6) {
+        $usernameError = "Username must be at least 6 characters.";
+        $_SESSION['register_error_username'] = $usernameError;
+        $hasError = true;
+    }
+    if ($password !== $confirm_password) {
+        
+        
+        
+        
+    }
+    if (strlen($password) < 8) {
+         $general_error = "Password must be at least 8 characters.";
+         $_SESSION['register_error'] = $general_error;
+         $hasError = true;
+    }
+
+    if (!$hasError) {
+        $sql_check_user = "SELECT id FROM users WHERE username = ?";
+        $stmt_check_user = $conn->prepare($sql_check_user);
+        if ($stmt_check_user) {
+            $stmt_check_user->bind_param("s", $username);
+            $stmt_check_user->execute();
+            $stmt_check_user->store_result();
+            if ($stmt_check_user->num_rows > 0) {
+                $usernameError = "Username already taken. Please choose another.";
+                $_SESSION['register_error_username'] = $usernameError;
+                $hasError = true;
+            }
+            $stmt_check_user->close();
+        } else {
+            error_log("Prepare failed (username check): " . $conn->error);
+            $_SESSION['register_error'] = "An error occurred during validation. Please try again.";
+            $hasError = true; 
+        }
+    }
+
+    if (!$hasError) { 
+        $sql_check_email = "SELECT id FROM users WHERE email = ?";
+        $stmt_check_email = $conn->prepare($sql_check_email);
+        if ($stmt_check_email) {
+            $stmt_check_email->bind_param("s", $email);
+            $stmt_check_email->execute();
+            $stmt_check_email->store_result();
+            if ($stmt_check_email->num_rows > 0) {
+                $emailError = "Email address already registered. Please use another or login.";
+                $_SESSION['register_error_email'] = $emailError;
+                $hasError = true;
+            }
+            $stmt_check_email->close();
+        } else {
+             error_log("Prepare failed (email check): " . $conn->error);
+             $_SESSION['register_error'] = "An error occurred during validation. Please try again.";
+             $hasError = true;
+        }
+    }
+
+
+    if ($hasError) {
+        
+        $conn->close(); 
+        header("Location: register.php"); 
+        exit; 
+    }
+
+    else {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        
+        $sql_insert = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
+        $stmt_insert = $conn->prepare($sql_insert);
+
+        if ($stmt_insert) {
+            $stmt_insert->bind_param("ssss", $username, $email, $hashed_password, $role);
+
+            if ($stmt_insert->execute()) {
+                
+                unset($_SESSION['register_posted_data']); 
+                $conn->close();
+                header("Location: login.php?registration=success"); 
+                exit;
+            } else {
+                
+                error_log("Execute failed (insert user): " . $stmt_insert->error);
+                $_SESSION['register_error'] = "Registration failed due to a server error. Please try again later.";
+                 $conn->close();
+                 header("Location: register.php"); 
+                 exit;
+            }
+            
+            
+        } else {
+            
+            error_log("Prepare failed (insert user): " . $conn->error);
+            $_SESSION['register_error'] = "Registration failed due to a server error. Please try again later.";
+             $conn->close();
+             header("Location: register.php"); 
+             exit;
+        }
+    }
+} 
+
+
+
 $username_error = $_SESSION['register_error_username'] ?? null;
 $email_error = $_SESSION['register_error_email'] ?? null;
-$general_error = $_SESSION['register_error'] ?? null;
-unset($_SESSION['register_error_username']);
+$general_error = $_SESSION['register_error'] ?? null; 
+unset($_SESSION['register_error_username']); 
 unset($_SESSION['register_error_email']);
 unset($_SESSION['register_error']);
 
-$posted_data = $_SESSION['register_posted_data'] ?? [];
-unset($_SESSION['register_posted_data']);
+$posted_data = $_SESSION['register_posted_data'] ?? []; 
+unset($_SESSION['register_posted_data']); 
 
 ?>
 <!DOCTYPE html>
@@ -69,7 +200,7 @@ unset($_SESSION['register_posted_data']);
     }
 
     .input-group input { flex: 1; border: none; background: transparent; color: white; font-size: 16px; outline: none; }
-    button { background-color: #FFD700; border: none; padding: 12px; width: 200px; text-align: center; color: black; border: 3px solid #FFD700; border-radius: 10px; height: 45px; font-weight: bold; cursor: pointer; transition: all 0.3s ease-in-out; margin-top: 20px; } /* Adjusted margin-top */
+    button { background-color: #FFD700; border: none; padding: 12px; width: 200px; text-align: center; color: black; border: 3px solid #FFD700; border-radius: 10px; height: 45px; font-weight: bold; cursor: pointer; transition: all 0.3s ease-in-out; margin-top: 20px; } 
     button:hover { background-color: #FFFFFF; color: black; border: 0; }
     .option2 { text-decoration: none; color: #ffffff; }
     .option2:hover { color: #FFD700; }
@@ -93,7 +224,7 @@ unset($_SESSION['register_posted_data']);
      }
 
     .toggle-password { cursor: pointer; margin-left: -30px; z-index: 2; }
-    .form-spacer { /* Reduced height and margins */
+    .form-spacer { 
        height: 17px; margin-top: 1px; margin-bottom: 1px;
     }
     </style>
@@ -109,7 +240,8 @@ unset($_SESSION['register_posted_data']);
         <p>Join Velour. Discover exclusive fragrances.</p>
     </div>
 
-    <form action="register_account.php" method="post" onsubmit="return validatePassword();">
+    
+    <form action="" method="post" onsubmit="return validatePassword();">
 
         <?php if ($general_error): ?>
             <div class="error-message-general"><?php echo htmlspecialchars($general_error); ?></div>
@@ -193,6 +325,14 @@ unset($_SESSION['register_posted_data']);
 
 </section>
 
-<?php @include 'footer.php'; ?>
+<?php 
+
+@include 'footer.php'; 
+
+
+if (isset($conn) && $conn instanceof mysqli) {
+   $conn->close();
+}
+?>
 </body>
 </html>
