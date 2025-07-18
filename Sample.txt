@@ -1,105 +1,56 @@
-// galleryModule.js
-
-function getGalleryContent() {
-    return ``; // Content is just the heading for this one, as per image
-}
-
-module.exports = {
-    getGalleryContent
-};
-
-
-// footerModule.js
-
-function getFooterContent() {
-    // As per the requirement: "Comment your name, date and section within your Node.js application. Put it at the bottom part of each page*"
-    // We'll output this as HTML content.
-    const yourName = "[Your Full Name Here]";
-    const currentDate = "July 18, 2025"; // Replace with actual current date
-    const yourSection = "[Your Section Here]";
-
-    return `
-        <hr>
-        <p style="font-size: 0.8em; color: #777;">
-            Name: ${yourName}<br>
-            Date: ${currentDate}<br>
-            Section: ${yourSection}
-        </p>
-    `;
-}
-
-module.exports = {
-    getFooterContent
-};
-
-
-// nonFoundModule.js
-
-function getNonFoundContent() {
-    return ``; // Content is just the heading for this one, as per image
-}
-
-module.exports = {
-    getNonFoundContent
-};
-
-
-
-
-
 // app.js
 
-const http = require('http'); // Node.js built-in module for HTTP
-const url = require('url');   // Node.js built-in module for URL parsing
+const http = require('http');
+const url = require('url');
 
-// Import your local modules
-const rootContentGenerator = require('./rootModule');
-const aboutContentGenerator = require('./aboutModule');
-const contactContentGenerator = require('./contactModule');
-const galleryContentGenerator = require('./galleryModule');     // New
-const nonFoundContentGenerator = require('./nonFoundModule'); // New
-const footerContentGenerator = require('./footerModule');     // New
+// Import your local modules (Ensure these paths are correct - ./modules/moduleName)
+const rootContentGenerator = require('./modules/rootModule'); // Make sure these are "rootModule", "aboutModule", etc. (camelCase)
+const aboutContentGenerator = require('./modules/aboutModule');
+const contactContentGenerator = require('./modules/contactModule');
+const galleryContentGenerator = require('./modules/galleryModule');
+const nonFoundContentGenerator = require('./modules/nonFoundModule');
+const footerContentGenerator = require('./modules/footerModule');
 
-const PORT = 5000; // You can change this port number if it's already in use
+const PORT = 5000; // Or 3000, if you decided to change it
 
 const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const path = parsedUrl.pathname;
 
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-
-    // Name to be passed to modules (as required)
-    const userName = "John Smith";
-
+    // Initialize variables to hold the content, title, and status code
     let pageContent = '';
     let pageTitle = '';
-    let statusCode = 200; // Default status code
+    let statusCode = 200; // Default status code is 200 OK
+
+    // Name to be passed to modules
+    const userName = "John Smith";
 
     switch (path) {
         case '/':
             pageTitle = 'Welcome to my Node.js Application';
-            pageContent = `<p>${rootContentGenerator.getRootContent(userName)}</p>`;
+            pageContent = `<h1>${pageTitle}</h1><p>${rootContentGenerator.getRootContent(userName)}</p>`;
             break;
         case '/about':
             pageTitle = 'This is the About Page';
-            pageContent = `<p>${aboutContentGenerator.getAboutContent(userName)}</p>`;
+            pageContent = `<h1>${pageTitle}</h1><p>${aboutContentGenerator.getAboutContent(userName)}</p>`;
             break;
         case '/contact':
             pageTitle = 'This is the Contact Page';
-            pageContent = `<p>${contactContentGenerator.getContactContent(userName)}</p>`;
+            pageContent = `<h1>${pageTitle}</h1><p>${contactContentGenerator.getContactContent(userName)}</p>`;
             break;
         case '/gallery':
             pageTitle = 'This is the Gallery Page';
-            pageContent = `<p>${galleryContentGenerator.getGalleryContent()}</p>`; // No specific content other than heading
+            // The content for gallery is just the heading, so we put it directly here
+            pageContent = `<h1>${pageTitle}</h1><p>${galleryContentGenerator.getGalleryContent()}</p>`;
             break;
         default:
-            statusCode = 400; // Bad Request for non-existing routes
+            statusCode = 400; // Set status to Bad Request for non-existing routes
             pageTitle = 'Invalid Request';
-            pageContent = `<p>${nonFoundContentGenerator.getNonFoundContent()}</p>`; // No specific content other than heading
+            pageContent = `<h1>${pageTitle}</h1><p>${nonFoundContentGenerator.getNonFoundContent()}</p>`;
             break;
     }
 
-    // Send the status code before writing content
+    // Now, send the headers ONCE based on the determined status code
     res.writeHead(statusCode, { 'Content-Type': 'text/html' });
 
     // Construct the full HTML response
@@ -112,7 +63,6 @@ const server = http.createServer((req, res) => {
             <title>${pageTitle}</title>
         </head>
         <body>
-            <h1>${pageTitle}</h1>
             ${pageContent}
             ${footerContentGenerator.getFooterContent()}
         </body>
@@ -128,6 +78,6 @@ server.listen(PORT, () => {
 
 /*
 Your Name: [Your Full Name Here]
-Date: [Current Date Here]
+Date: July 18, 2025
 Section: [Your Section Here]
 */
