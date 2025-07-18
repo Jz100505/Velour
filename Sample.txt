@@ -1,75 +1,124 @@
-function getAboutContent(name) {
-    return `Hello ${name}. This activity will teach on how to deal with a simple server and local modules in Node.js`;
+// galleryModule.js
+
+function getGalleryContent() {
+    return ``; // Content is just the heading for this one, as per image
 }
 
 module.exports = {
-    getAboutContent
+    getGalleryContent
 };
 
-/*
-Your Name: [Your Full Name Here]
-Date: [Current Date Here]
-Section: [Your Section Here]
-*/
 
+// footerModule.js
 
+function getFooterContent() {
+    // As per the requirement: "Comment your name, date and section within your Node.js application. Put it at the bottom part of each page*"
+    // We'll output this as HTML content.
+    const yourName = "[Your Full Name Here]";
+    const currentDate = "July 18, 2025"; // Replace with actual current date
+    const yourSection = "[Your Section Here]";
 
-function getContactContent(name) {
-    return `${name}, if you want additional details about this activity, go to this site: https://www.tutorialsteacher.com/nodejs/nodejs-tutorials`;
+    return `
+        <hr>
+        <p style="font-size: 0.8em; color: #777;">
+            Name: ${yourName}<br>
+            Date: ${currentDate}<br>
+            Section: ${yourSection}
+        </p>
+    `;
 }
 
 module.exports = {
-    getContactContent
+    getFooterContent
 };
 
-/*
-Your Name: [Your Full Name Here]
-Date: [Current Date Here]
-Section: [Your Section Here]
-*/
+
+// nonFoundModule.js
+
+function getNonFoundContent() {
+    return ``; // Content is just the heading for this one, as per image
+}
+
+module.exports = {
+    getNonFoundContent
+};
 
 
+
+
+
+// app.js
 
 const http = require('http'); // Node.js built-in module for HTTP
 const url = require('url');   // Node.js built-in module for URL parsing
 
-
+// Import your local modules
 const rootContentGenerator = require('./rootModule');
 const aboutContentGenerator = require('./aboutModule');
 const contactContentGenerator = require('./contactModule');
+const galleryContentGenerator = require('./galleryModule');     // New
+const nonFoundContentGenerator = require('./nonFoundModule'); // New
+const footerContentGenerator = require('./footerModule');     // New
 
 const PORT = 5000; // You can change this port number if it's already in use
 
 const server = http.createServer((req, res) => {
-    const parsedUrl = url.parse(req.url, true); // true to parse query string as object
+    const parsedUrl = url.parse(req.url, true);
     const path = parsedUrl.pathname;
 
-    res.writeHead(200, { 'Content-Type': 'text/html' }); // Set content type to HTML
+    res.writeHead(200, { 'Content-Type': 'text/html' });
 
-
+    // Name to be passed to modules (as required)
     const userName = "John Smith";
+
+    let pageContent = '';
+    let pageTitle = '';
+    let statusCode = 200; // Default status code
 
     switch (path) {
         case '/':
-            res.write('<h1>Welcome to my Node.js Application</h1>');
-            res.write(`<p>${rootContentGenerator.getRootContent(userName)}</p>`);
+            pageTitle = 'Welcome to my Node.js Application';
+            pageContent = `<p>${rootContentGenerator.getRootContent(userName)}</p>`;
             break;
         case '/about':
-            res.write('<h1>This is the About Page</h1>');
-            res.write(`<p>${aboutContentGenerator.getAboutContent(userName)}</p>`);
+            pageTitle = 'This is the About Page';
+            pageContent = `<p>${aboutContentGenerator.getAboutContent(userName)}</p>`;
             break;
         case '/contact':
-            res.write('<h1>This is the Contact Page</h1>');
-            res.write(`<p>${contactContentGenerator.getContactContent(userName)}</p>`);
+            pageTitle = 'This is the Contact Page';
+            pageContent = `<p>${contactContentGenerator.getContactContent(userName)}</p>`;
             break;
         case '/gallery':
-            res.write('<h1>This is the Gallery Page</h1>');
+            pageTitle = 'This is the Gallery Page';
+            pageContent = `<p>${galleryContentGenerator.getGalleryContent()}</p>`; // No specific content other than heading
             break;
         default:
-            res.writeHead(400, { 'Content-Type': 'text/html' }); // Set status to Bad Request
-            res.write('<h1>Invalid Request</h1>');
+            statusCode = 400; // Bad Request for non-existing routes
+            pageTitle = 'Invalid Request';
+            pageContent = `<p>${nonFoundContentGenerator.getNonFoundContent()}</p>`; // No specific content other than heading
             break;
     }
+
+    // Send the status code before writing content
+    res.writeHead(statusCode, { 'Content-Type': 'text/html' });
+
+    // Construct the full HTML response
+    res.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${pageTitle}</title>
+        </head>
+        <body>
+            <h1>${pageTitle}</h1>
+            ${pageContent}
+            ${footerContentGenerator.getFooterContent()}
+        </body>
+        </html>
+    `);
+
     res.end(); // End the response
 });
 
